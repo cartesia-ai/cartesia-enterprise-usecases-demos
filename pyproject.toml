@@ -1,0 +1,13 @@
+[project]
+name = "launch-usecases-guide"
+version = "0.1.0"
+description = "Runnable Python examples for Cartesia enterprise launch use cases."
+requires-python = ">=3.11"
+dependencies = [
+    "cartesia>=3.2.0b1",
+    "cartesia-line>=0.2.11a0",
+    "loguru>=0.7.3",
+]
+
+[tool.uv]
+prerelease = "allow"
