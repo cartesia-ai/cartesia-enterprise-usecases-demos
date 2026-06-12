@@ -1,5 +1,7 @@
 """Inbound support triage with Cartesia Line.
 
+One of the 10 enterprise voice use cases in the Cartesia guide (see README).
+
 Tool types used below (loopback tools + agent_as_handoff):
   https://docs.cartesia.ai/line/sdk/tools
 

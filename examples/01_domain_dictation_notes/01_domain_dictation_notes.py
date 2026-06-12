@@ -1,5 +1,7 @@
 """Transcribe industry dictation samples with Cartesia Ink-2.
 
+One of the 10 enterprise voice use cases in the Cartesia guide (see README).
+
 Usage:
     uv run python 01_domain_dictation_notes.py --audio field_ops.wav
 

@@ -1,10 +1,12 @@
-# 6 Enterprise Voice Workflows You Can Build with Cartesia
+# 10 Enterprise Voice Workflows You Can Build with Cartesia
 
-This guide shows six common enterprise use cases for Sonic-3.5 (TTS), Ink-2 (STT), and Line (voice agent framework), that we are seeing deployed in industry today.
+This guide shows ten common enterprise use cases for Sonic-3.5 (TTS), Ink-2 (STT), and Line (voice agent framework), that we are seeing deployed in industry today.
 
-The first three use cases are Cartesia model-only, via the API. The last three use Cartesia's Line agents SDK.
+The first three use cases are Cartesia model-only, via the API. Use cases four through nine use Cartesia's Line agents SDK. The tenth pairs Cartesia voices with digital avatars.
 
-The [Setup](#setup) section lists the prerequisites you need to run the sample code locally. All the examples live in [this repo](https://github.com/cartesia-ai/cartesia-enterprise-usecases-demos).
+## Get the code
+
+All ten examples live in **[this repo](https://github.com/cartesia-ai/cartesia-enterprise-usecases-demos)** — clone it to follow along. See [Setup](#setup-for-all-use-cases) below for prerequisites.
 
 ## Table of Contents
 
@@ -14,7 +16,11 @@ The [Setup](#setup) section lists the prerequisites you need to run the sample c
 - [4. Inbound Support Triage](#4-inbound-support-triage)
 - [5. Healthcare Appointment Booking](#5-healthcare-appointment-booking)
 - [6. Banking KYC Follow-Up](#6-banking-kyc-follow-up)
-- [Setup](#setup)
+- [7. Sales Role-Play and Coaching](#7-sales-role-play-and-coaching)
+- [8. Sales Qualification](#8-sales-qualification)
+- [9. Internal HR Helpdesk](#9-internal-hr-helpdesk)
+- [10. Voice for Digital Avatars](#10-voice-for-digital-avatars)
+- [Setup For All Use Cases](#setup-for-all-use-cases)
 - [What next](#what-next)
 
 ## 1. Domain-Specific Dictation and Notes
@@ -125,7 +131,7 @@ uv run python examples/02_multilingual_training_practice/02_multilingual_trainin
 
 With `--text`, the file is saved as `output_<language>.wav` (here `output_en.wav`), so your custom runs don't overwrite the bundled samples. The path is in the JSON `output_file`.
 
-**Tip: the wording shapes the delivery.** Sonic-3.5 picks up tone and emotion cues in the text. Naming the tone (`with positive energy`) and wrapping the spoken line in quotes with natural punctuation makes the read warmer and more expressive. Try the same greeting with and without those cues to hear the difference. The built-in scenarios use this.
+**Tip:** Sonic-3.5 doesn't need an emotion setting — it infers tone from the surrounding context. The `SCENARIOS` lines in the script give it that context: they describe the moment ("greeting a customer with a positive energy") and quote the actual words to speak, so the read comes out warm rather than flat. Try the same line with and without that framing to hear the difference.
 
 **CLI**
 
@@ -355,7 +361,151 @@ Learn more about [outbound calling here.](https://docs.cartesia.ai/line/integrat
 
 ---
 
-## Setup
+## 7. Sales Role-Play and Coaching
+
+### What you're building
+
+Sales reps get good at handling objections by doing it, but a live prospect is a bad place to practice. This **Line** agent is a practice partner: it plays a hesitant prospect — a mid-market ops manager who isn't sure they need the product — so a rep can rehearse the pitch and work through the pushback out loud, as many times as they want. When the rep wraps up or asks for feedback, the agent drops the character and gives a short coaching scorecard. Same agent, two modes, no real deal on the line.
+
+### Why use Cartesia here
+
+A role-play only helps if it feels like a real call — spoken, in the moment, with someone who pushes back. Line's STT transcribes the practicing rep, and Sonic-3.5 TTS represents the prospect, so the rep practices the way they'll actually sell, not by typing. And because the prospect is a model, not a colleague doing them a favor, a rep can run the same tough call ten times before lunch and get the same skeptic every time.
+
+### Step-by-step workflow
+
+1. The agent speaks first, in character as the prospect, and raises realistic objections — price, priority, an existing workaround, needing buy-in from others.
+2. The rep runs discovery, makes the pitch, and handles the pushback.
+3. When the rep says they're done or asks for feedback, the agent calls `score_call` (mock) and switches out of character.
+4. As a coach, the agent reads back a short scorecard — discovery, objection handling, value articulation, next step — with one overall tip, then ends the call.
+
+### Run it
+
+Set your keys, then start the server:
+
+```bash
+export CARTESIA_API_KEY="your-cartesia-api-key"
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+
+uv run python examples/07_sales_roleplay/07_sales_roleplay.py
+```
+
+In a second terminal — `cartesia chat` opens a text conversation with the running agent on port 8000. The agent speaks first, as the skeptical buyer:
+
+```bash
+cartesia chat 8000
+```
+
+Try it:
+
+- It opens in character. Pitch your product and answer its questions.
+- When it pushes back — "the price feels high for what we'd use," "it's not a priority this quarter" — handle the objection.
+- When you're ready, say "I'm done — how did I do?" It drops the persona, calls `score_call`, reads back the coaching scorecard, and ends the call.
+
+`score_call` returns the same fixed scorecard every time — it marks where real scoring, built from the call transcript, would plug in.
+
+Learn more about [building Line agents here.](https://docs.cartesia.ai/line/sdk/agents)
+
+### Take it live
+
+`cartesia chat` is local text only. To hear the agent on a real phone call, run `cartesia deploy`, then call it from the [Playground](https://play.cartesia.ai/agents) or with `cartesia call +1XXXXXXXXXX`. See [Deploy and talk to your agent](https://docs.cartesia.ai/line/start-building/quickstart).
+
+---
+
+## 8. Sales Qualification
+
+### What you're building
+
+When a prospect calls your sales line, someone has to work out fast whether they're a real opportunity, and get the good ones to a rep before they cool off. This **Line** agent runs that first qualifying conversation: it runs the four checks sales teams call BANT — budget, authority (who owns the decision), need, and timeline — logs the lead, and routes. A qualified lead is handed to an account executive on the same call; everyone else is captured for follow-up. It's the same intake-and-route shape as the support triage example, pointed at revenue instead of tickets.
+
+### Why use Cartesia here
+
+Leads cool off fast — someone who reaches out is most interested right then, not an hour later when a rep calls back. A voice agent answers straight away and asks the same qualifying questions every time, so a real opportunity reaches a salesperson while the interest is still there, and the rep's time goes to the leads worth following up. Ink-2 transcribes the caller, Sonic-3.5 voices the replies, and Line hands qualified leads to a human account executive, who picks up the same conversation.
+
+### Step-by-step workflow
+
+1. The agent greets the caller and asks what they're trying to solve.
+2. It works through BANT conversationally — need, authority, budget, timeline — plus name and company.
+3. It calls `capture_lead` (mock CRM) with the details and whether the lead is qualified.
+4. If qualified, `transfer_to_account_executive` hands the live call to an AE. If not, the agent says a rep will follow up by email and ends the call.
+
+### Run it
+
+Set your keys, then start the server:
+
+```bash
+export CARTESIA_API_KEY="your-cartesia-api-key"
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+
+uv run python examples/08_sales_qualification/08_sales_qualification.py
+```
+
+In a second terminal — `cartesia chat` opens a text conversation with the running agent on port 8000. The agent greets first:
+
+```bash
+cartesia chat 8000
+```
+
+Try it:
+
+- Be a real opportunity: "We're a 200-person company, called ACME Traders, and our analytics are a mess, we're evaluating tools this quarter and I own the budget." Answer its questions and watch it qualify you and hand you to an account executive.
+- Start a fresh `cartesia chat` and be a poor fit: "I'm a student doing research, no budget, just curious." It logs you as not qualified and ends with an email follow-up instead of transferring.
+
+A qualified lead here goes to a live account exec. You could just as easily book them a meeting — drop in the scheduling flow from the healthcare booking example (use case 5), which confirms a slot and writes it back.
+
+Learn more about [Line tools and handoffs here.](https://docs.cartesia.ai/line/sdk/tools)
+
+### Take it live
+
+`cartesia chat` is local text only. To hear the agent on a real phone call, run `cartesia deploy`, then call it from the [Playground](https://play.cartesia.ai/agents) or with `cartesia call +1XXXXXXXXXX`. See [Deploy and talk to your agent](https://docs.cartesia.ai/line/start-building/quickstart).
+
+---
+
+## 9. Internal HR Helpdesk
+
+### What you're building
+
+Every company runs an internal helpdesk for the same repetitive questions — how much PTO do I have, what's the expense limit, how do I get VPN access. This **Line** agent answers them from your own policy docs: using RAG, it looks up the question in a Cartesia [knowledge base](https://docs.cartesia.ai/line/knowledge-base) and answers from what's there, instead of guessing. Anything sensitive or personal — a harassment concern, a pay dispute, leave specifics — goes to a human in HR. Point the same agent at a different folder of docs and it's an IT helpdesk, a self-serve onboarding guide, or a SaaS provisioning desk; only the documents change.
+
+### Why use Cartesia here
+
+The pieces fit together with no extra plumbing: Ink-2 transcribes the employee, Sonic-3.5 voices the replies, and Line's knowledge base retrieves from your docs (RAG) so answers stay grounded in your actual policies, not the model's training. Because the docs live in the Cartesia dashboard, the HR or IT team that owns them keeps them current — no prompt edits, no redeploy.
+
+### Step-by-step workflow
+
+1. The employee asks a question.
+2. For a general policy question, the agent calls `lookup_hr_policy`, which queries the knowledge base, and answers from the result.
+3. If the lookup returns nothing — or the knowledge base isn't connected yet — the agent says the policy isn't available and offers to connect the employee with HR. It doesn't guess.
+4. Sensitive or personal matters hand off to a human with `transfer_to_hr_specialist`.
+
+### Deploy and connect your knowledge base
+
+The knowledge base is tied to a specific deployed agent. So for this one we recommend deploying to the Cartesia hosted platform and attaching a knowledge base — a couple of simple policy docs (or AI-generated ones) are enough to simulate the scenario. You can still run it locally with `cartesia chat`, but since local chat has no knowledge base, the lookup just tells the user to deploy the agent and connect a knowledge base. That's also a useful pattern in itself — it's the no-guessing behavior at work.
+
+Here's how you can deploy:
+
+1. Follow the [quickstart](https://docs.cartesia.ai/line/start-building/quickstart) to scaffold and deploy an agent (`cartesia init`, then `cartesia deploy`), replacing the generated `main.py` with `examples/09_hr_helpdesk/09_hr_helpdesk.py`.
+2. In the [Playground](https://play.cartesia.ai/knowledge-base), create a knowledge base, upload your policy docs, and attach it to this agent. Sample HR docs are in `examples/09_hr_helpdesk/kb_docs/` to get you started. Whoever owns the content (HR, IT) maintains it here — no code.
+
+Now `lookup_hr_policy` returns real answers from your docs.
+
+### Try it
+
+Talk to the deployed agent in the [Playground](https://play.cartesia.ai/agents) or with `cartesia call +1XXXXXXXXXX`:
+
+- Ask a policy question — "How much parental leave do I get?" The agent looks it up in your knowledge base and answers from the doc.
+- Ask about something sensitive — "I want to report a problem with my manager." It hands you to a human in HR.
+
+You can run it locally the same way as the earlier examples (`uv run python examples/09_hr_helpdesk/09_hr_helpdesk.py`, then `cartesia chat 8000`) if you want to see the conversation and the handoff — but policy lookups only return real answers once a knowledge base is attached to the deployed agent.
+
+---
+
+## 10. Voice for Digital Avatars
+
+Give your Cartesia voice agents a face. Pair Sonic-3.5's low-latency, natural and emotive speech with an on-screen avatar to build presenters for demos, training, kiosks, and virtual reception. See a great example of this pairing in [this video](https://drive.google.com/file/d/1eKTAyxhv91o7YViGYOXhveGVI6ernqtO/view) from one of our partners, [Anam](https://anam.ai).
+
+---
+
+## Setup For All Use Cases
 
 Install dependencies:
 
@@ -369,7 +519,7 @@ Set your Cartesia key (required for all examples):
 export CARTESIA_API_KEY="your-cartesia-api-key"
 ```
 
-For Line examples (4–6), also set an Anthropic key:
+For Line examples (4–9), also set an Anthropic key:
 
 ```bash
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
@@ -377,5 +527,4 @@ export ANTHROPIC_API_KEY="your-anthropic-api-key"
 
 ## What next
 
-If you're ready to build or extend your own enterprise-grade voice AI applications, reach out to us at **[support@cartesia.ai](mailto:support@cartesia.ai)**.
-
+If you're ready to build or extend your own enterprise-grade voice AI applications, reach out to us at **[business@cartesia.ai](mailto:business@cartesia.ai)**.

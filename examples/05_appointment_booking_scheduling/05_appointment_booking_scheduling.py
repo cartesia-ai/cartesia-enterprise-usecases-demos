@@ -1,5 +1,7 @@
 """Telehealth appointment booking with Cartesia Line.
 
+One of the 10 enterprise voice use cases in the Cartesia guide (see README).
+
 A scheduling assistant for a telehealth clinic: it books video visits, collects
 only the minimum details needed (minimum-necessary), and hands clinical questions
 to the care team. It never gives medical advice.

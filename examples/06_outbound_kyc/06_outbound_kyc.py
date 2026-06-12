@@ -1,5 +1,7 @@
 """Outbound KYC follow-up for a digital bank, with Cartesia Line.
 
+One of the 10 enterprise voice use cases in the Cartesia guide (see README).
+
 The voice agent calls a customer of a fictional digital bank (Meridian) who started
 opening an account but didn't finish, confirms identity, collects only the missing
 KYC details, and saves them. This is regulated outbound — not debt collection, and

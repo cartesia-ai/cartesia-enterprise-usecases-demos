@@ -1,5 +1,7 @@
 """Multilingual training audio with Cartesia Sonic-3.5 TTS.
 
+One of the 10 enterprise voice use cases in the Cartesia guide (see README).
+
 Turn one training script into natural speech in multiple languages, each voiced
 by a voice native to it, one generation per language. No voice actor, no studio:
 change the script and regenerate instead of re-recording per language. This is

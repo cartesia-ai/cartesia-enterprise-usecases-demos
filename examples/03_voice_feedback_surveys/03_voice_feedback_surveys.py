@@ -1,5 +1,7 @@
 """Voice feedback survey: generate a survey question with Sonic-3.5, transcribe the answer with Ink-2.
 
+One of the 10 enterprise voice use cases in the Cartesia guide (see README).
+
 Usage:
     uv run python 03_voice_feedback_surveys.py --audio answer.wav
 
