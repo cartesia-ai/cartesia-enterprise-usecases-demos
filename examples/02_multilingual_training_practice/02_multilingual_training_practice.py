@@ -38,6 +38,7 @@ VOICE_IDS = {
     "en": "47c38ca4-5f35-497b-b1a3-415245fb35e1",  # Daniel - Modern Assistant
     "es": "9d8c6b2e-0a23-4a15-ae1b-121d5b5af417",  # Nuria - Trusted Advisor (Castilian)
     "fr": "7c58f4a4-a72c-42fa-a503-41b9408820f3",  # Inès - Poised Communicator (Parisian)
+    "hi": "95d51f79-c397-46f9-b49a-23763d3eaa2d",  # Arushi - Poised Communicator (Parisian)
 }
 
 # Built-in enablement scenario: a customer-greeting drill a rep can listen to and
@@ -46,6 +47,7 @@ SCENARIOS = {
     "en": "Welcome to the team. Let's practice greeting a customer with a positive energy: 'Hi Daniela! thanks for calling. How can I help you today?'",
     "es": "Bienvenido al equipo. Practiquemos cómo saludar a un cliente con energía positiva: '¡Hola Daniela! Gracias por llamar. ¿En qué puedo ayudarle hoy?'",
     "fr": "Bienvenue dans l'équipe. Entraînons-nous à accueillir un client avec une énergie positive : 'Bonjour Danielle! Merci de votre appel. Comment puis-je vous aider aujourd'hui ?'",
+    "hi" : "Welcome to the team. Chalo practice karte hain customer ko positive energy ke saath greet karna: 'Hi Daniela! Call karne ke liye thank you. आज मैं आपकी कैसे help कर सकता हूँ?'"
 }
 
 
@@ -53,7 +55,7 @@ def synthesize_speech(api_key: str, text: str, language: str, voice_id: str, out
     client = Cartesia(api_key=api_key)
 
     resp = client.tts.generate(
-        model_id="sonic-3.5",
+        model_id="sonic-preview",
         transcript=text,
         voice={"mode": "id", "id": voice_id},
         language=language,
@@ -69,6 +71,7 @@ def main() -> None:
     parser.add_argument("--language", default="en", help="BCP-47 language code (default: en)")
     parser.add_argument("--text", default=None, help="Custom text to speak; uses built-in scenario if omitted")
     parser.add_argument("--output", default=None, help="Output WAV filename (default: training_<language>.wav, or output_<language>.wav with --text)")
+    
     args = parser.parse_args()
 
     api_key = os.environ.get("CARTESIA_API_KEY")
@@ -97,7 +100,7 @@ def main() -> None:
         "language": args.language,
         "voice_id": voice_id,
         "output_file": str(output_path),
-        "model": "sonic-3.5",
+        "model": "sonic-3.6",
     }
     print(json.dumps(result, indent=2))
 

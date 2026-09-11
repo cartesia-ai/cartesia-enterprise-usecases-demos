@@ -50,9 +50,11 @@ def load_wav_chunks(path: Path) -> tuple[int, list[bytes]]:
         # Divide by 1000 to convert milliseconds to seconds.
         # e.g. 16000 fps × 100 ms / 1000 = 1600 frames per chunk.
         frames_per_chunk = framerate * CHUNK_LENGTH_MS // 1000
+        
         chunks: list[bytes] = []
         while data := wf.readframes(frames_per_chunk):
             chunks.append(data)
+
     return framerate, chunks
 
 
@@ -67,6 +69,7 @@ async def transcribe_with_ink2(api_key: str, rate: int, chunks: list[bytes]) -> 
         for chunk in chunks:
             await ws.send_raw(chunk)
             await asyncio.sleep(CHUNK_LENGTH_MS / 1000)
+        
         await ws.send("finalize")
         await ws.send("close")
         async for event in ws:

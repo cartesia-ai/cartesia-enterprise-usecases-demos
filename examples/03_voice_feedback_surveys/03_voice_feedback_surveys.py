@@ -29,7 +29,7 @@ SURVEY_QUESTION = (
     "What slowed you down, and what should we improve first?"
 )
 
-DEFAULT_VOICE_ID = "e07c00bc-4134-4eae-9ea4-1a55fb45746b"
+DEFAULT_VOICE_ID = "e07c00bc-4134-4eae-9ea4-1a55fb45746b" #  Brooke
 QUESTION_OUTPUT = SCRIPT_DIR / "survey_question.wav"
 
 
@@ -37,6 +37,7 @@ QUESTION_OUTPUT = SCRIPT_DIR / "survey_question.wav"
 
 def generate_question_audio(api_key: str, text: str, output: Path, voice_id: str) -> None:
     client = Cartesia(api_key=api_key)
+    
     resp = client.tts.generate(
         model_id="sonic-3.5",
         transcript=text,
