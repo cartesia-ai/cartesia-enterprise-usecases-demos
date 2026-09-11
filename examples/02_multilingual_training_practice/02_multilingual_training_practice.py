@@ -55,7 +55,7 @@ def synthesize_speech(api_key: str, text: str, language: str, voice_id: str, out
     client = Cartesia(api_key=api_key)
 
     resp = client.tts.generate(
-        model_id="sonic-preview",
+        model_id="sonic-3.6",
         transcript=text,
         voice={"mode": "id", "id": voice_id},
         language=language,
