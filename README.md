@@ -1,8 +1,8 @@
 # 10 Enterprise Voice Workflows You Can Build with Cartesia
 
-This guide shows ten common enterprise use cases for Sonic-3.5 (TTS), Ink-2 (STT), and Line (voice agent framework), that we are seeing deployed in industry today.
+This guide shows ten common enterprise use cases for Cartesia speech models and voice agents that we are seeing deployed in industry today.
 
-The first three use cases are Cartesia model-only, via the API. Use cases four through nine use Cartesia's Line agents SDK. The tenth pairs Cartesia voices with digital avatars.
+The first three use cases call Cartesia models directly. Use cases four through six, eight, and nine use the Line SDK. Use case seven uses Cartesia Managed Agents. The tenth pairs Cartesia voices with digital avatars.
 
 ## Get the code
 
@@ -365,11 +365,11 @@ Learn more about [outbound calling here.](https://docs.cartesia.ai/line/integrat
 
 ### What you're building
 
-Sales reps get good at handling objections by doing it, but a live prospect is a bad place to practice. This **Line** agent is a practice partner: it plays a hesitant prospect — a mid-market ops manager who isn't sure they need the product — so a rep can rehearse the pitch and work through the pushback out loud, as many times as they want. When the rep wraps up or asks for feedback, the agent drops the character and gives a short coaching scorecard. Same agent, two modes, no real deal on the line.
+Sales reps get good at handling objections by doing it, but a live prospect is a bad place to practice. This **Managed Agent** is a practice partner: it plays a hesitant prospect — a mid-market ops manager who isn't sure they need the product — so a rep can rehearse the pitch and work through the pushback out loud, as many times as they want. When the rep wraps up or asks for feedback, the agent drops the character and gives a short coaching scorecard. Same agent, two modes, no real deal on the line.
 
 ### Why use Cartesia here
 
-A role-play only helps if it feels like a real call — spoken, in the moment, with someone who pushes back. Line's STT transcribes the practicing rep, and Sonic-3.5 TTS represents the prospect, so the rep practices the way they'll actually sell, not by typing. And because the prospect is a model, not a colleague doing them a favor, a rep can run the same tough call ten times before lunch and get the same skeptic every time.
+A role-play only helps if it feels like a real call — spoken, in the moment, with someone who pushes back. Managed Agents combine Ink-2 transcription, a managed LLM, and Sonic-3.6 speech, so the rep practices the way they'll actually sell, not by typing. Cartesia hosts that full conversation runtime; this example only supplies the instructions and one mock scoring tool.
 
 ### Step-by-step workflow
 
@@ -380,34 +380,40 @@ A role-play only helps if it feels like a real call — spoken, in the moment, w
 
 ### Run it
 
-Set your keys, then start the server:
+Set your Cartesia key, then start the mock scoring endpoint:
 
 ```bash
 export CARTESIA_API_KEY="your-cartesia-api-key"
-export ANTHROPIC_API_KEY="your-anthropic-api-key"
 
-uv run python examples/07_sales_roleplay/07_sales_roleplay.py
+uv run python examples/07_sales_roleplay/07_sales_roleplay.py serve
 ```
 
-In a second terminal — `cartesia chat` opens a text conversation with the running agent on port 8000. The agent speaks first, as the skeptical buyer:
+Managed webhook tools require a public HTTPS URL. In a second terminal, create a temporary tunnel:
 
 ```bash
-cartesia chat 8000
+ssh -R 80:localhost:8000 nokey@localhost.run
 ```
 
-Try it:
+Copy the HTTPS forwarding URL, then create the `score_call` tool and Managed Agent:
+
+```bash
+uv run python examples/07_sales_roleplay/07_sales_roleplay.py provision \
+  --webhook-base-url https://YOUR-NGROK-URL
+```
+
+The command prints the new agent ID. Open [Managed Agents in the Playground](https://play.cartesia.ai/agents), select it, and try the role-play:
 
 - It opens in character. Pitch your product and answer its questions.
 - When it pushes back — "the price feels high for what we'd use," "it's not a priority this quarter" — handle the objection.
 - When you're ready, say "I'm done — how did I do?" It drops the persona, calls `score_call`, reads back the coaching scorecard, and ends the call.
 
-`score_call` returns the same fixed scorecard every time — it marks where real scoring, built from the call transcript, would plug in.
+`score_call` returns the same fixed scorecard every time. The local server log confirms when the Managed Agent calls it. Replace that endpoint with transcript-based scoring in production.
 
-Learn more about [building Line agents here.](https://docs.cartesia.ai/line/sdk/agents)
+Learn more about [Managed Agents](https://docs.cartesia.ai/agents/introduction) and [webhook tools](https://docs.cartesia.ai/agents/webhook-tools).
 
 ### Take it live
 
-`cartesia chat` is local text only. To hear the agent on a real phone call, run `cartesia deploy`, then call it from the [Playground](https://play.cartesia.ai/agents) or with `cartesia call +1XXXXXXXXXX`. See [Deploy and talk to your agent](https://docs.cartesia.ai/line/start-building/quickstart).
+The agent is live as soon as the provisioning command creates it. To receive phone calls, assign it a number in the Playground. See [connect a phone number](https://docs.cartesia.ai/line/integrations/telephony/phone-numbers).
 
 ---
 
@@ -519,7 +525,7 @@ Set your Cartesia key (required for all examples):
 export CARTESIA_API_KEY="your-cartesia-api-key"
 ```
 
-For Line examples (4–9), also set an Anthropic key:
+For Line examples (4–6 and 8–9), also set an Anthropic key:
 
 ```bash
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
