@@ -38,7 +38,7 @@ VOICE_IDS = {
     "en": "47c38ca4-5f35-497b-b1a3-415245fb35e1",  # Daniel - Modern Assistant
     "es": "9d8c6b2e-0a23-4a15-ae1b-121d5b5af417",  # Nuria - Trusted Advisor (Castilian)
     "fr": "7c58f4a4-a72c-42fa-a503-41b9408820f3",  # Inès - Poised Communicator (Parisian)
-    "hi": "95d51f79-c397-46f9-b49a-23763d3eaa2d",  # Arushi - Poised Communicator (Parisian)
+    "hi": "95d51f79-c397-46f9-b49a-23763d3eaa2d",  # Arushi - Poised Communicator (Hindi)
 }
 
 # Built-in enablement scenario: a customer-greeting drill a rep can listen to and
