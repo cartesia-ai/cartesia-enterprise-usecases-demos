@@ -23,7 +23,11 @@ All ten examples live in **[this repo](https://github.com/cartesia-ai/cartesia-e
 - [Setup For All Use Cases](#setup-for-all-use-cases)
 - [What next](#what-next)
 
+
+
 ## 1. Domain-Specific Dictation and Notes
+
+
 
 ### What you're building
 
@@ -80,7 +84,11 @@ Learn more about [Ink 2 here.](https://docs.cartesia.ai/build-with-cartesia/stt-
 
 ---
 
+
+
 ## 2. Multilingual Training and Practice
+
+
 
 ### What you're building
 
@@ -95,6 +103,8 @@ Normally you'd hire a voice actor and book studio time for each language, and go
 1. Pick a language and built-in scenario (or pass your own text).
 2. Call Sonic-3.5 TTS to generate the spoken audio.
 3. Write the WAV file, ready to drop into the training module.
+
+
 
 ### Run it
 
@@ -151,7 +161,11 @@ Learn more about [Sonic-3.5 here.](https://docs.cartesia.ai/build-with-cartesia/
 
 ---
 
+
+
 ## 3. Voice Feedback Surveys
+
+
 
 ### What you're building
 
@@ -201,7 +215,11 @@ Learn more about [Sonic-3.5](https://docs.cartesia.ai/build-with-cartesia/tts-mo
 
 ---
 
+
+
 ## 4. Inbound Support Triage
+
+
 
 ### What you're building
 
@@ -219,6 +237,8 @@ Line runs Cartesia models under the hood — Ink-2 transcribes the caller, Sonic
 4. Agent classifies the request as billing, technical, account, or escalation.
 5. Agent calls `create_support_ticket` (mock helpdesk).
 6. Agent routes: `transfer_to_billing`, `transfer_to_technical`, or `transfer_to_human`.
+
+
 
 ### Run it
 
@@ -255,7 +275,11 @@ The specialists here work from their prompts alone. If you want them answering f
 
 ---
 
+
+
 ## 5. Healthcare Appointment Booking
+
+
 
 ### What you're building
 
@@ -273,6 +297,8 @@ Healthcare buyers don't open with "what can it do" — they open with "what coul
 4. Agent collects name, date of birth, and a callback number, reads them back, then calls `confirm_booking` (mock writeback).
 5. Agent reads back the confirmed visit.
 6. Clinical questions, no suitable slot, or sensitive cases hand off with `transfer_to_clinic_staff`.
+
+
 
 ### Run it
 
@@ -305,7 +331,11 @@ Learn more about [building Line agents here.](https://docs.cartesia.ai/line/sdk/
 
 ---
 
+
+
 ## 6. Banking KYC Follow-Up
+
+
 
 ### What you're building
 
@@ -324,6 +354,8 @@ In financial services an outbound call is a compliance surface: consent, calling
 5. Agent collects only the missing fields.
 6. Agent calls `submit_kyc_details` (mock writeback).
 7. Agent hands off disputes or out-of-scope questions to `transfer_to_support`.
+
+
 
 ### Run it
 
@@ -361,7 +393,11 @@ Learn more about [outbound calling here.](https://docs.cartesia.ai/line/integrat
 
 ---
 
+
+
 ## 7. Sales Role-Play and Coaching
+
+
 
 ### What you're building
 
@@ -369,7 +405,15 @@ Sales reps get good at handling objections by doing it, but a live prospect is a
 
 ### Why use Cartesia here
 
-A role-play only helps if it feels like a real call — spoken, in the moment, with someone who pushes back. Managed Agents combine Ink-2 transcription, a managed LLM, and Sonic-3.6 speech, so the rep practices the way they'll actually sell, not by typing. Cartesia hosts that full conversation runtime; this example only supplies the instructions and one mock scoring tool.
+A role-play only helps if it feels like a real call — spoken, in the moment, with someone who pushes back. Cartesia Managed Agents combine Ink-2 transcription, a managed LLM, and Sonic-3.6 speech so the rep practices the way they'll actually sell, not by typing. Cartesia hosts that full  e2e voice agent and conversation runtime; this example only supplies the instructions and one mock scoring tool.
+
+### Why the agent needs a tool at all
+
+The agent could judge the call by itself — models will happily tell a rep how they did. You don't want that. Improvised feedback shifts from call to call, can't be compared between two reps, and rests on whatever the model happened to notice.
+
+`score_call` moves that judgement out of the model and into your system. Every rep gets measured against the same rubric, the result is something you can store and track over a quarter, and the score can draw on what the model can't see: CRM outcomes, the criteria your sales leaders actually agreed on, how this rep scored last month.
+
+That is what a webhook tool adds to an agent. Not plumbing — grounding. It's the difference between a convincing role-play and training you can manage.
 
 ### Step-by-step workflow
 
@@ -378,36 +422,151 @@ A role-play only helps if it feels like a real call — spoken, in the moment, w
 3. When the rep says they're done or asks for feedback, the agent calls `score_call` (mock) and switches out of character.
 4. As a coach, the agent reads back a short scorecard — discovery, objection handling, value articulation, next step — with one overall tip, then ends the call.
 
-### Run it
 
-Set your Cartesia key, then start the mock scoring endpoint:
+
+### The two files, and why there are two
+
+Cartesia hosts the conversation. The scoring logic is your business logic and so it lives in your server. So a webhook tool calls back out to your server (in this example using the free cloudflare tunnel). That split is the whole architecture, so the folder has one file per side:
+
+
+| File                   | What it is                                                      | When it runs                                |
+| ---------------------- | --------------------------------------------------------------- | ------------------------------------------- |
+| `score_call_server.py` | Your backend. An HTTP endpoint returning the scorecard.         | Running the whole time the agent is in use. |
+| `provision_agent.py`   | One-time setup. Creates the tool and the agent in your account. | Once. Then never again.                     |
+
+
+In production the first one is a service you deploy and the second is a setup script you run from CI. Nothing in this example runs "the call" — Cartesia does that.
+
+### Run it in three minutes
+
+**First, open three terminal windows.** Two of them stay open the whole time you're using the agent, which is why they can't share one window:
+
+
+|                | What runs there                           | How long                                         |
+| -------------- | ----------------------------------------- | ------------------------------------------------ |
+| **Terminal 1** | Your backend, `score_call_server.py`.     | Stays running. Closing it breaks the scorecard.  |
+| **Terminal 2** | The tunnel, `cloudflared`.                | Stays running. Closing it kills your public URL. |
+| **Terminal 3** | The checks and the one-off setup command. | Free. Reuse it for anything.                     |
+
+
+Terminals 1 and 2 are both blocking processes — they print a line and then sit there, which is what you want. Neither will return you to a prompt.
+
+This is a local-development shape, not production. Deployed for real, Terminal 1 is a service running somewhere on its own, Terminal 2 doesn't exist at all, and Terminal 3 is a step in CI you run once.
+
+**1. Start your backend.** (Terminal 1) No API key here — this half never calls Cartesia. Cartesia calls it.
+
+```bash
+uv run python examples/07_sales_roleplay/score_call_server.py
+```
+
+It prints `score_call endpoint listening on http://127.0.0.1:8000/score-call` and stays running. Leave it.
+
+This is a plain web server and nothing else. It answers `POST /score-call` with a fixed scorecard — **the same JSON every time, to anyone who asks, whatever they send it**. `build_scorecard()` doesn't read the request at all. It knows nothing about agents, calls or conversations, which is what makes it a mock and why you can test it on its own, before any agent exists.
+
+**2. Expose it with a tunnel.** (Terminal 2)
+
+Cartesia calls your endpoint over the internet, so it needs a public HTTPS URL. `http://127.0.0.1:8000` only exists on your machine. A tunnel gives you a temporary public URL that forwards to it. This is a local-development step — in production your service is already deployed at a real address and there's no tunnel involved.
+
+Install `cloudflared` for your OS from [Cloudflare's downloads page](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/). No Cloudflare account is needed. Then run:
+
+```bash
+cloudflared tunnel --url http://localhost:8000
+```
+
+It prints a box with a URL in it:
+
+```
++--------------------------------------------------------------------------------------------+
+|  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):    |
+|  https://responsibilities-affiliates-lived-polyphonic.trycloudflare.com                      |
++--------------------------------------------------------------------------------------------+
+```
+
+That URL is what Cartesia will call. A request to it reaches Cloudflare, which forwards it down the tunnel to `http://localhost:8000` on your machine — so your laptop answers, without being exposed to the internet itself.
+
+Copy it and leave the tunnel running. You get a different random URL every time you restart `cloudflared`, which matters in step 3.
+
+**Then wait about ten seconds before using it.** The `trycloudflare.com` hostname was created seconds ago and the internet's DNS hasn't caught up yet — cloudflared says as much in the box, "it may take some time to be reachable." Requests sent too early fail with `Could not resolve host`, which looks like a broken setup but isn't.
+
+Once you've waited, check the whole path end to end. This one goes in **Terminal 3** — Terminals 1 and 2 are both busy holding processes open:
+
+```bash
+curl -s -X POST https://YOUR-TUNNEL-URL/score-call
+```
+
+**What this checks is the path, not the agent.** For the scorecard to work during a call, a request has to travel from the public internet to your laptop: DNS, then Cloudflare's edge, then the tunnel in Terminal 2, then your server. That's four things that can be broken. This `curl` walks all four now, while a failure still has one possible cause.
+
+The `curl` sends no data, and doesn't need to — `build_scorecard()` never looks at the request, so an empty POST runs the same code a real call would. (If you later replace the mock with scoring that reads a transcript, send a sample body here instead.)
+
+**The scorecard that comes back is not a result.** Nothing has been spoken or scored. The endpoint returns that same JSON to anybody who asks. Getting it here only means the pipe is open.
+
+A pass is scorecard JSON here plus a `[score_call]` line in Terminal 1. Anything else tells you what to fix:
+
+
+| What you see             | What it means                                    | What to do                                                     |
+| ------------------------ | ------------------------------------------------ | -------------------------------------------------------------- |
+| `Could not resolve host` | DNS hasn't caught up with the new hostname.      | Wait ten seconds, run it again.                                |
+| `502`                    | Tunnel is up, nothing is listening on port 8000. | Check Terminal 1 is still running, and that it says port 8000. |
+| `404`                    | Wrong path.                                      | Use `/score-call`, with the hyphen.                            |
+| `501`                    | You sent a GET, not a POST.                      | Keep `-X POST` in the command.                                 |
+| Nothing, then a timeout  | Tunnel died.                                     | Check Terminal 2; restart it and use the new URL.              |
+| `200` and scorecard JSON | Working.                                         | Go to step 3.                                                  |
+
+
+Don't skip ahead on a failure. Provisioning will still succeed and the agent will still role-play — it just dies at the scorecard, mid-call, where the cause is invisible.
+
+**3. Create the agent.** (Terminal 3)
 
 ```bash
 export CARTESIA_API_KEY="your-cartesia-api-key"
 
-uv run python examples/07_sales_roleplay/07_sales_roleplay.py serve
+uv run python examples/07_sales_roleplay/provision_agent.py \
+  --webhook-base-url https://<<<<<YOUR-TUNNEL-URL>>>>>>>
 ```
 
-Managed webhook tools require a public HTTPS URL. In a second terminal, create a temporary tunnel:
+It prints an `agent_id`. That agent is live immediately — there is no deploy step.
 
-```bash
-ssh -R 80:localhost:8000 nokey@localhost.run
-```
-
-Copy the HTTPS forwarding URL, then create the `score_call` tool and Managed Agent:
-
-```bash
-uv run python examples/07_sales_roleplay/07_sales_roleplay.py provision \
-  --webhook-base-url https://YOUR-NGROK-URL
-```
-
-The command prints the new agent ID. Open [Managed Agents in the Playground](https://play.cartesia.ai/agents), select it, and try the role-play:
+**4. Talk to it.** Open [Managed Agents in the Playground](https://play.cartesia.ai/agents), select the agent by that id, and start the call:
 
 - It opens in character. Pitch your product and answer its questions.
 - When it pushes back — "the price feels high for what we'd use," "it's not a priority this quarter" — handle the objection.
-- When you're ready, say "I'm done — how did I do?" It drops the persona, calls `score_call`, reads back the coaching scorecard, and ends the call.
+- Say "I'm done — how did I do?" It drops the persona, calls `score_call`, reads the scorecard, and ends the call.
 
-`score_call` returns the same fixed scorecard every time. The local server log confirms when the Managed Agent calls it. Replace that endpoint with transcript-based scoring in production.
+Watch Terminal 1 while it does that. The `[score_call]` line printing there is a live voice call reaching your laptop.
+
+**Where the scorecard ends up.** Nowhere. The agent speaks it and hangs up — Cartesia doesn't keep it, and the spoken version is gone with the call. Nothing is written to disk here, because this scorecard is a constant and saving the same four numbers repeatedly would tell you nothing.
+
+What you do get is the exchange, in Terminal 1:
+
+```
+[score_call] 2026-09-11T05:05:45Z from 127.0.0.1
+  in : {"call_id":"abc123","tool":"score_call"}
+  out: 200, discovery 3, objection_handling 4, value_articulation 2, next_step 3
+```
+
+The `in:` line is worth watching — it's what Cartesia actually posts to a webhook tool, which you can't see from anywhere else.
+
+That absence is the thing to take from this example: **whatever your endpoint returns is spoken once and then lost.** If a score has to survive the call, your endpoint is what has to write it down. Swap `build_scorecard()` for real transcript scoring, have it persist to your database, and everything else here stays as it is.
+
+> **Before you re-run step 3:** the tunnel URL is baked into the tool when it is created, and nothing updates it afterwards. Restart the tunnel and you get a new URL so you can update the webhook settings of your deployed voice agent on the Cartesia playground, under the Managed Agents section.
+
+### Changing the prompt on an existing agent
+
+Re-running the provisioning command with `--webhook-base-url` always creates a **new** agent. To change the one you already have, edit the file and pass its id instead:
+
+```bash
+uv run python examples/07_sales_roleplay/provision_agent.py --agent-id YOUR_AGENT_ID
+```
+
+That `PATCH`es the whole local config, so an edit to the prompt, the greeting, the model, the token ceiling, the language, the voice or `end_call` all go through this one command. `config.tools` is left out on purpose, so the agent keeps the `score_call` tool it was created with.
+
+`score_call` returns the same fixed scorecard every time. Replace `build_scorecard()` with transcript-based scoring for production; nothing else has to change.
+
+Run the tests with:
+
+```bash
+uv run python -m unittest discover -s examples/07_sales_roleplay -p "test_*.py"
+```
 
 Learn more about [Managed Agents](https://docs.cartesia.ai/agents/introduction) and [webhook tools](https://docs.cartesia.ai/agents/webhook-tools).
 
@@ -417,7 +576,11 @@ The agent is live as soon as the provisioning command creates it. To receive pho
 
 ---
 
+
+
 ## 8. Sales Qualification
+
+
 
 ### What you're building
 
@@ -433,6 +596,8 @@ Leads cool off fast — someone who reaches out is most interested right then, n
 2. It works through BANT conversationally — need, authority, budget, timeline — plus name and company.
 3. It calls `capture_lead` (mock CRM) with the details and whether the lead is qualified.
 4. If qualified, `transfer_to_account_executive` hands the live call to an AE. If not, the agent says a rep will follow up by email and ends the call.
+
+
 
 ### Run it
 
@@ -466,7 +631,11 @@ Learn more about [Line tools and handoffs here.](https://docs.cartesia.ai/line/s
 
 ---
 
+
+
 ## 9. Internal HR Helpdesk
+
+
 
 ### What you're building
 
@@ -482,6 +651,8 @@ The pieces fit together with no extra plumbing: Ink-2 transcribes the employee, 
 2. For a general policy question, the agent calls `lookup_hr_policy`, which queries the knowledge base, and answers from the result.
 3. If the lookup returns nothing — or the knowledge base isn't connected yet — the agent says the policy isn't available and offers to connect the employee with HR. It doesn't guess.
 4. Sensitive or personal matters hand off to a human with `transfer_to_hr_specialist`.
+
+
 
 ### Deploy and connect your knowledge base
 
@@ -505,11 +676,15 @@ You can run it locally the same way as the earlier examples (`uv run python exam
 
 ---
 
+
+
 ## 10. Voice for Digital Avatars
 
 Give your Cartesia voice agents a face. Pair Sonic-3.5's low-latency, natural and emotive speech with an on-screen avatar to build presenters for demos, training, kiosks, and virtual reception. See a great example of this pairing in [this video](https://drive.google.com/file/d/1eKTAyxhv91o7YViGYOXhveGVI6ernqtO/view) from one of our partners, [Anam](https://anam.ai).
 
 ---
+
+
 
 ## Setup For All Use Cases
 
@@ -530,6 +705,8 @@ For Line examples (4–6 and 8–9), also set an Anthropic key:
 ```bash
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
 ```
+
+
 
 ## What next
 
